@@ -34,7 +34,7 @@ This resolves dependencies on each launch (slower startup, but no install step).
 
 ## Configuration
 
-Add to your Claude Code settings (`~/.claude/settings.json`):
+Add to `~/.claude/.mcp.json` (global) or `.mcp.json` in your project root (per-project):
 
 ```json
 {
