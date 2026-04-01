@@ -82,6 +82,10 @@ Get fork point details with diverging branches. Shows which branch the user cont
 - **Lazy loading**: Session files are only parsed when a tool needs the data
 - **Lightweight metadata**: `list_sessions` avoids full JSON parsing for speed
 
+## Acknowledgements
+
+The core insight that Claude Code session files are trees (not linear logs) comes from [claude-session-tools](https://github.com/aurora-thesean/claude-session-tools) by aurora-thesean. That project's clear documentation of the `parentUuid` tree structure and fork semantics informed the design of this MCP server. Our implementation adds compact boundary stitching, primary branch detection, lazy loading, and the MCP interface, but the foundational understanding of the data model originated there.
+
 ## License
 
 MIT

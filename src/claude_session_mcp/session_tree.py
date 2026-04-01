@@ -115,6 +115,10 @@ def _extract_from_content(content) -> list[str]:
                 t = block.get("text", "")
                 if t:
                     texts.append(t)
+            elif block_type == "thinking":
+                t = block.get("thinking", "")
+                if t:
+                    texts.append(t)
             elif block_type == "tool_result":
                 # Tool results can contain nested content
                 inner = block.get("content", "")
@@ -185,6 +189,7 @@ class SessionTree:
         self._records: dict[str, Record] | None = None
         self._children: dict[str, list[str]] | None = None
         self._roots: list[str] | None = None
+        self._session_ids: set[str] | None = None
         self._loaded = False
 
     def _ensure_loaded(self) -> None:
@@ -193,9 +198,10 @@ class SessionTree:
         self._records = {}
         self._children = defaultdict(list)
         self._roots = []
+        self._session_ids = set()
 
         try:
-            with open(self.filepath, "r") as f:
+            with open(self.filepath, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -210,6 +216,8 @@ class SessionTree:
                         continue
 
                     self._records[record.uuid] = record
+                    if record.session_id:
+                        self._session_ids.add(record.session_id)
 
                     if record.parent_uuid:
                         self._children[record.parent_uuid].append(record.uuid)
@@ -237,6 +245,12 @@ class SessionTree:
     def roots(self) -> list[str]:
         self._ensure_loaded()
         return self._roots  # type: ignore
+
+    @property
+    def session_ids(self) -> set[str]:
+        """All distinct sessionId values found in the file."""
+        self._ensure_loaded()
+        return self._session_ids  # type: ignore
 
     def get_fork_points(self) -> list[ForkPoint]:
         """Find all points where the conversation forked.
@@ -508,7 +522,7 @@ class ProjectIndex:
             last_ts = ""
             count = 0
 
-            with open(filepath, "r") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 for line in f:
                     count += 1
                     line = line.strip()
@@ -561,18 +575,26 @@ class ProjectIndex:
             return None
 
     def find_session(self, session_id: str, project_slug: str = "") -> SessionTree | None:
-        """Find a session by ID (or prefix)."""
+        """Find a session by ID (or prefix).
+
+        First matches against file stems (fast). If no match, falls back to
+        scanning sessionId values inside files — this catches resumed sessions
+        where the new session ID differs from the original file name.
+        """
         if not PROJECTS_DIR.exists():
             return None
 
         dirs = [PROJECTS_DIR / project_slug] if project_slug else sorted(PROJECTS_DIR.iterdir())
 
+        # Pass 1: match file stems (fast, no parsing)
+        all_files: list[Path] = []
         for project_dir in dirs:
             if not project_dir.is_dir():
                 continue
             for f in project_dir.glob("*.jsonl"):
                 if f.stem == session_id or f.stem.startswith(session_id):
                     return SessionTree(f)
+                all_files.append(f)
 
             # Check subagent files
             for session_dir in project_dir.iterdir():
@@ -584,6 +606,15 @@ class ProjectIndex:
                 for f in subagent_dir.glob("*.jsonl"):
                     if f.stem == session_id or f.stem.startswith(session_id):
                         return SessionTree(f)
+                    all_files.append(f)
+
+        # Pass 2: scan session IDs inside files (handles resumed sessions)
+        for f in all_files:
+            tree = SessionTree(f)
+            if session_id in tree.session_ids or any(
+                sid.startswith(session_id) for sid in tree.session_ids
+            ):
+                return tree
 
         return None
 
