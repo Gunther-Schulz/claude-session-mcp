@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "claude-session-mcp"
+version = "0.1.0"
+description = "Fork-aware MCP server for searching and navigating Claude Code session history"
+requires-python = ">=3.10"
+dependencies = ["mcp>=1.0.0"]
+
+[project.scripts]
+claude-session-mcp = "claude_session_mcp:main"
