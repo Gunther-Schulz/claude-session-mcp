@@ -10,15 +10,27 @@ This server correctly parses the tree structure, detects forks, identifies prima
 
 ## Installation
 
-Requires [uv](https://docs.astral.sh/uv/):
+Requires [uv](https://docs.astral.sh/uv/) (available via most package managers, e.g. `pacman -S uv` on Arch/CachyOS, `brew install uv` on macOS).
+
+### Install from GitHub
 
 ```bash
-# Run directly
-uvx claude-session-mcp
-
-# Or install globally
-uv tool install claude-session-mcp
+uv tool install git+https://github.com/Gunther-Schulz/claude-session-mcp
 ```
+
+This creates an isolated environment and puts `claude-session-mcp` on your PATH. Update with:
+
+```bash
+uv tool upgrade claude-session-mcp
+```
+
+### Alternative: run without installing
+
+```bash
+uvx --from git+https://github.com/Gunther-Schulz/claude-session-mcp claude-session-mcp
+```
+
+This resolves dependencies on each launch (slower startup, but no install step).
 
 ## Configuration
 
@@ -28,8 +40,19 @@ Add to your Claude Code settings (`~/.claude/settings.json`):
 {
   "mcpServers": {
     "session-search": {
-      "command": "uvx",
-      "args": ["claude-session-mcp"]
+      "command": "claude-session-mcp"
+    }
+  }
+}
+```
+
+If `claude-session-mcp` is not on your PATH (e.g. `~/.local/bin` isn't in the base PATH), use the full path instead:
+
+```json
+{
+  "mcpServers": {
+    "session-search": {
+      "command": "/home/your-user/.local/bin/claude-session-mcp"
     }
   }
 }
